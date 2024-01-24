@@ -46,7 +46,7 @@ class Program
 
         List<string> subnets = ReadSubnetsFromFile("subnets.txt");
 
-        Console.WriteLine("--------------------------------------");
+        Console.WriteLine("--------------------------------------"); 
 
         foreach (string subnet in subnets)
         {
@@ -78,9 +78,10 @@ class Program
 
         foreach (var process in processes)
         {
-            if (HasNetworkConnectionToSubnets(process.Id, subnets))
+            var retIpAddress = HasNetworkConnectionToSubnets(process.Id, subnets);
+            if (retIpAddress != "")
             {
-                Console.WriteLine(DateTime.Now.ToString() + $"Process Name: {process.ProcessName}");
+                
                 if (process.ProcessName.ToLower() == "svchost")
                 {
                     // Get the services associated with the svchost process
@@ -91,15 +92,19 @@ class Program
                     {
                         if (IsServiceAssociatedWithProcess(service, process.Id))
                         {
-                            Console.WriteLine($"Service Name: {service.ServiceName}, Display Name: {service.DisplayName}");
+                            Console.WriteLine($"IP Address: {retIpAddress} ,Service Name: {service.ServiceName}, Display Name: {service.DisplayName}");
                         }
                     }
+                }
+                else
+                {
+                    Console.WriteLine(DateTime.Now.ToString() + $"IP Address:  {retIpAddress}, Process Name: {process.ProcessName}");
                 }
             }
         }
     }
 
-    static bool HasNetworkConnectionToSubnets(int processId, List<string> subnets)
+    static string HasNetworkConnectionToSubnets(int processId, List<string> subnets)
     {
         try
         {
@@ -118,10 +123,11 @@ class Program
                     {
                         IntPtr rowPtr = IntPtr.Add(tcpTablePtr, 4 + i * rowSize);
                         MIB_TCPROW_OWNER_PID row = Marshal.PtrToStructure<MIB_TCPROW_OWNER_PID>(rowPtr);
+                        string retIpAddress = IsRemoteAddressInSubnets(row.dwRemoteAddr, subnets);
 
-                        if (row.dwOwningPid == processId && IsRemoteAddressInSubnets(row.dwRemoteAddr, subnets))
+                        if (row.dwOwningPid == processId && retIpAddress != "")
                         {
-                            return true;
+                            return retIpAddress;
                         }
                     }
                 }
@@ -136,10 +142,10 @@ class Program
             Console.WriteLine($"Error checking network connections: {ex.Message}");
         }
 
-        return false;
+        return "";
     }
 
-    static bool IsRemoteAddressInSubnets(uint remoteAddress, List<string> subnets)
+    static string IsRemoteAddressInSubnets(uint remoteAddress, List<string> subnets)
     {
         string remoteIpAddress = GetIPAddress(remoteAddress);
 
@@ -147,11 +153,11 @@ class Program
         {
             if (IsIPInSubnet(remoteIpAddress, subnet))
             {
-                return true;
+                return remoteIpAddress;
             }
         }
 
-        return false;
+        return "";
     }
 
     static bool IsIPInSubnet(string ipAddress, string subnet)
