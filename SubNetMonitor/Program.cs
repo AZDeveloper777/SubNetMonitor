@@ -9,6 +9,12 @@ using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 
+//Intended for use with a tool like Suricata
+//Tested on Windows 10.
+//Use case:  Suricata tells you a machine is making calls to a given IP address and you don't know what program is doing that.
+//           Put the subnet for that IP address in a file called subnets.txt in your executable directory.
+//           Run the console app and wait for it to output the path/executable that calls that subnet.
+
 class Program
 {
     const int AF_INET = 2; // IPv4
